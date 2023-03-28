@@ -56,26 +56,31 @@ Here are a few ideas to be implementing as part of the core library:
 use_bpm Model.avg(:value).to_i
 ```
 
+## Examples
 
-## Installation
+Use `bin/console` to start the application and confirm that you can listen to
+the application.
 
-Add this line to your application's Gemfile:
+
+Paste the following code into your SonicPI app:
 
 ```ruby
-gem 'piscale'
+live_loop :tsdb do
+  msg = sync("/osc:127.0.0.1:51062/run-code").last
+  eval(msg)
+end
 ```
 
-And then execute:
+It will just allow you to connect as a remote source into your Sonic PI and
+execute commands.
 
-    $ bundle install
-
-Or install it yourself as:
-
-    $ gem install piscale
+Make sure you adapt the port and url as the `Cues` view shows.
 
 ## Usage
 
-TODO: Write usage instructions here
+Use `bin/console` with a Postgresql URI to fetch data from the database. It
+expects you're using hypertables and it's already mapping all hypertables as
+models in the console.
 
 ## Development
 
@@ -85,7 +90,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/piscale. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/piscale/blob/master/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/jonatas/piscale. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/jonatas/piscale/blob/master/CODE_OF_CONDUCT.md).
 
 
 ## License
@@ -94,4 +99,4 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ## Code of Conduct
 
-Everyone interacting in the Piscale project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/piscale/blob/master/CODE_OF_CONDUCT.md).
+Everyone interacting in the Piscale project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/jonatas/piscale/blob/master/CODE_OF_CONDUCT.md).
