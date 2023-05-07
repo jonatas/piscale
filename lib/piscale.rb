@@ -2,7 +2,7 @@ require "piscale/version"
 require 'sonic_pi'
 require 'timescaledb'
 
-ActiveRecord::Base.establish_connection(ARGV[0])
+ActiveRecord::Base.establish_connection(ARGV[0] || ENV['PG_URI'])
 
 module Piscale
   class Error < StandardError; end
@@ -26,18 +26,15 @@ module Piscale
   end
 
   def lttb_demo
-    ny.lttb(threshold: 500).each do |(time, temp)|
-      temp.each do |t|
-        run("play #{(44 + temp).to_i}")
-        run "sleep 0.5"
-        sleep 0.5
-      end
+    ny.lttb(threshold: 500, segment_by: nil).each do |time, temp|
+      run("play #{(44 + temp).to_i}")
+      sleep 0.5
     end
   end
 
   def ohlc_demo
     run "use_synth :dark_ambience"
-    ny.ohlc(timeframe: '1d').each do |candle|
+    ny.candlestick(timeframe: '1d', volume: "1").each do |candle|
       attack = (candle.high_time - candle.open_time) / 1.hour
       decay = (candle.low_time - candle.open_time) / 1.hour
       amp = [candle.high_time, candle.low_time].sort.reverse.inject(:-) / 1.hour
@@ -47,8 +44,8 @@ module Piscale
     end
   end
 
-  def ohlc_beat
-    candles = ny.ohlc(timeframe: '1y')
+  def candle_beat
+    candles = ny.candlestick(timeframe: '1y', volume: "1")
     previous = candles.first
     candles.each do |candle|
       beat_time = (candle.high_time - candle.open_time) / 1.year
@@ -62,8 +59,8 @@ module Piscale
     end
   end
 
-  def ohlc_chord
-    candles = ny.ohlc(timeframe: '1 month')
+  def candle_chord
+    candles = ny.candlestick(timeframe: '1 month', volume: "1")
     previous = candles.first
     candles.each do |candle|
       o,h,l,c = candle["open"], candle.high, candle.low, candle.close
@@ -76,11 +73,14 @@ module Piscale
     end;nil
   end
 
+  # Play sine synth with reverb. Connect release to humidity, room to wind speed
+  # city_name: "New York", "Vienna", "Toronto"
+  # bpm: :humidity, :wind
   def reverb_with_humidity(city_name: "New York", bpm: :humidity)
     run <<-ruby
+    use_synth :sine
     define :play_sine_with_reverb do |freq, duration, reverb_room|
       with_fx :reverb, room: reverb_room do
-        use_synth :sine
         play freq, release: duration
       end
     end
@@ -89,7 +89,7 @@ module Piscale
 
     scope.select("temp_c, humidity_percent, wind_speed_ms").order("time").each do |row|
       temperature, humidity, wind = row.temp_c, row.humidity_percent, row.wind_speed_ms
-      run "play_sine_with_reverb 40+#{temperature}, #{humidity / 100}, #{wind}"
+      run "play_sine_with_reverb hz_to_midi(440+#{temperature}), #{humidity / 100}, #{wind}"
       case bpm
       when :humidity
         sleep (humidity / 100) * 0.5
@@ -99,6 +99,20 @@ module Piscale
         sleep 0.5
       end
     end
+  end
+
+  def play_temperature city_name: "New York", temperature: "avg", base: 44, sleep: 0.5
+    WeatherMetric
+      .select("time_bucket('1 year', time), #{temperature}(temp_c) as temperature")
+      .where(city_name: city_name)
+      .where("EXTRACT(MONTH FROM time) IN (6, 7, 8)")
+      .where("EXTRACT(HOUR FROM (time + timezone_shift::text::interval)) BETWEEN 12 AND 16")
+      .group(1)
+      .each do |row|
+        puts row.time_bucket.year
+        run "play #{base} + #{row.temperature}"
+        sleep sleep
+      end
   end
 
   def run msg
