@@ -1,6 +1,5 @@
 # Piscale
 
-
 The Piscale is a bridge between Timescale and SonicPi.
 
 The aspiration of this application is to create an approachable interface
@@ -75,6 +74,8 @@ It will just allow you to connect as a remote source into your Sonic PI and
 execute commands.
 
 Make sure you adapt the port and url as the `Cues` view shows.
+
+Want to learn more? Check out my [sonification workshop](https://github.com/jonatas/sonification-workshop)
 
 ## Usage
 
